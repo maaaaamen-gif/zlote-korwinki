@@ -48,7 +48,7 @@ async function getCollections(env) {
       serverSelectionTimeoutMS: 10000,
     });
     const promise = client.connect().then(async () => {
-      const database = client.db(env.MONGODB_DB || "zlote_korwinki");
+      const database = client.db(env.MONGODB_DB || "zlote-korwinki");
       const clips = database.collection("clips");
       const votes = database.collection("clip_votes");
       await Promise.all([
