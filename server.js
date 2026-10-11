@@ -18,6 +18,7 @@ import {
   credentialsMatch,
   verifyAdminSession,
 } from "./src/admin-auth.js";
+import { isCategoryVotingEnabled, normalizeVotingCategories } from "./src/site-settings.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const maxUploadBytes = 100 * 1024 * 1024;
@@ -88,15 +89,20 @@ let settings;
 let bucket;
 let mongoClient;
 
-const defaultSiteSettings = Object.freeze({ uploadsEnabled: true, votingEnabled: false });
+const defaultSiteSettings = Object.freeze({ uploadsEnabled: true, votingCategories: [] });
 
 async function getSiteSettings() {
   const current = await settings.findOne({ _id: "site" });
-  if (!current) return { ...defaultSiteSettings };
-  const uploadsEnabled = current.uploadsEnabled === true;
+  const uploadsEnabled = current?.uploadsEnabled !== false;
+  const votingCategories = normalizeVotingCategories(
+    current?.votingCategories,
+    current?.votingEnabled === true,
+    uploadsEnabled,
+  );
   return {
     uploadsEnabled,
-    votingEnabled: !uploadsEnabled && current.votingEnabled === true,
+    votingCategories,
+    votingEnabled: votingCategories.length > 0,
   };
 }
 
@@ -239,28 +245,49 @@ app.get("/api/admin/session", requireAdmin, async (_request, response, next) => 
 
 app.patch("/api/admin/settings", requireSameOrigin, requireAdmin, async (request, response, next) => {
   try {
-    const { setting, enabled } = request.body ?? {};
-    if (!["uploadsEnabled", "votingEnabled"].includes(setting) || typeof enabled !== "boolean") {
+    const { setting, enabled, category } = request.body ?? {};
+    const validBulkVotingChange = setting === "votingAll" && typeof enabled === "boolean";
+    const validCategoryVotingChange = setting === "votingCategory"
+      && CATEGORIES.includes(category)
+      && typeof enabled === "boolean";
+    if ((!["uploadsEnabled"].includes(setting) || typeof enabled !== "boolean")
+        && !validBulkVotingChange
+        && !validCategoryVotingChange) {
       return response.status(400).json({ error: "Nieprawidłowe ustawienie." });
     }
 
     if (setting === "uploadsEnabled" && enabled) {
       await settings.updateOne(
         { _id: "site" },
-        { $set: { uploadsEnabled: true, votingEnabled: false } },
+        { $set: { uploadsEnabled: true, votingCategories: [], votingEnabled: false } },
       );
-    } else if (setting === "votingEnabled" && enabled) {
-      const result = await settings.updateOne(
-        { _id: "site", uploadsEnabled: false },
-        { $set: { votingEnabled: true } },
+    } else if (setting === "uploadsEnabled") {
+      await settings.updateOne(
+        { _id: "site" },
+        { $set: { uploadsEnabled: false } },
       );
+    } else if (validBulkVotingChange || validCategoryVotingChange) {
+      const modifier = validBulkVotingChange
+        ? enabled
+          ? { $set: { votingCategories: [...CATEGORIES], votingEnabled: true } }
+          : { $set: { votingCategories: [], votingEnabled: false } }
+        : enabled
+          ? { $addToSet: { votingCategories: category }, $set: { votingEnabled: true } }
+          : { $pull: { votingCategories: category } };
+      const result = await settings.updateOne({ _id: "site", uploadsEnabled: false }, modifier);
       if (result.matchedCount === 0) {
         return response.status(409).json({
           error: "Aby włączyć głosowanie, najpierw wyłącz przesyłanie klipów.",
         });
       }
-    } else {
-      await settings.updateOne({ _id: "site" }, { $set: { [setting]: false } });
+      if (validCategoryVotingChange && !enabled) {
+        const updated = await settings.findOne({ _id: "site" });
+        const votingCategories = normalizeVotingCategories(updated?.votingCategories, false, false);
+        await settings.updateOne(
+          { _id: "site", uploadsEnabled: false },
+          { $set: { votingEnabled: votingCategories.length > 0 } },
+        );
+      }
     }
 
     return response.json({ settings: await getSiteSettings() });
@@ -377,7 +404,17 @@ app.get("/api/clips", async (request, response, next) => {
           as: "voteSummary",
         },
       },
-      { $addFields: { votes: { $ifNull: [{ $arrayElemAt: ["$voteSummary.count", 0] }, 0] } } },
+      {
+        $addFields: {
+          votes: {
+            $cond: [
+              { $in: ["$category", siteSettings.votingCategories] },
+              { $ifNull: [{ $arrayElemAt: ["$voteSummary.count", 0] }, 0] },
+              0,
+            ],
+          },
+        },
+      },
       { $sort: siteSettings.votingEnabled ? { votes: -1, createdAt: -1, _id: 1 } : { createdAt: -1, _id: 1 } },
       { $skip: page * limit },
       { $limit: limit + 1 },
@@ -395,8 +432,8 @@ app.get("/api/clips", async (request, response, next) => {
     const votedIds = new Set(voted.map((vote) => vote.clipId.toString()));
     return response.json({
       clips: pageRows.map((clip) => publicClip(
-        siteSettings.votingEnabled ? clip : { ...clip, votes: 0 },
-        votedIds,
+        clip,
+        isCategoryVotingEnabled(siteSettings, clip.category) ? votedIds : new Set(),
       )),
       hasMore,
     });
@@ -484,12 +521,13 @@ app.post("/api/clips/:id/vote", voteLimiter, async (request, response, next) => 
     return response.status(404).json({ error: "Nie znaleziono klipu." });
   }
   try {
-    if (!(await getSiteSettings()).votingEnabled) {
-      return response.status(403).json({ error: "Głosowanie jest obecnie wyłączone." });
-    }
     const clipId = new ObjectId(request.params.id);
-    const clip = await clips.findOne({ _id: clipId }, { projection: { _id: 1 } });
+    const clip = await clips.findOne({ _id: clipId }, { projection: { _id: 1, category: 1 } });
     if (!clip) return response.status(404).json({ error: "Nie znaleziono klipu." });
+    const siteSettings = await getSiteSettings();
+    if (!isCategoryVotingEnabled(siteSettings, clip.category)) {
+      return response.status(403).json({ error: "Głosowanie w tej kategorii jest obecnie wyłączone." });
+    }
     const voterId = readVoterCookie(request) ?? getVoterId(request, response);
     try {
       await votes.insertOne({ clipId, voterId, createdAt: new Date() });
@@ -548,9 +586,22 @@ async function start() {
         { upsert: true },
       ),
     ]);
+    const savedSettings = await settings.findOne({ _id: "site" });
+    const uploadsEnabled = savedSettings?.uploadsEnabled !== false;
+    const votingCategories = normalizeVotingCategories(
+      savedSettings?.votingCategories,
+      savedSettings?.votingEnabled === true,
+      uploadsEnabled,
+    );
     await settings.updateOne(
-      { _id: "site", uploadsEnabled: true, votingEnabled: true },
-      { $set: { votingEnabled: false } },
+      { _id: "site" },
+      {
+        $set: {
+          uploadsEnabled,
+          votingCategories,
+          votingEnabled: votingCategories.length > 0,
+        },
+      },
     );
 
     const port = Number(process.env.PORT || 3000);

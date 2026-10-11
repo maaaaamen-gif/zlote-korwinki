@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Konkurs na Najlepszy Klip</title>
-  <link rel="stylesheet" href="/site.css?v=admin-controls-1">
-  <script src="/app.js?v=admin-controls-1" defer></script>
+  <link rel="stylesheet" href="/site.css?v=category-voting-1">
+  <script src="/app.js?v=category-voting-1" defer></script>
 </head>
 <body>
 
@@ -168,10 +168,16 @@
             </div>
             <div class="admin-setting">
               <div>
-                <strong>Głosowanie</strong>
+                <strong>Głosowanie w kategoriach</strong>
                 <p id="admin-voting-status"></p>
               </div>
-              <button id="btn-toggle-voting" type="button" class="btn-secondary"></button>
+            </div>
+            <div id="admin-voting-controls" class="admin-voting-controls">
+              <div class="admin-voting-bulk">
+                <button id="btn-enable-all-voting" type="button" class="btn-secondary">Włącz wszystkie</button>
+                <button id="btn-disable-all-voting" type="button" class="btn-secondary">Wyłącz wszystkie</button>
+              </div>
+              <div id="admin-voting-categories" class="admin-voting-categories"></div>
             </div>
 
             <h3>Zgłoszone klipy</h3>

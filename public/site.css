@@ -138,6 +138,19 @@ button:disabled { cursor: wait; opacity: 0.65; }
 .admin-setting > div, .admin-clip > div:first-child { min-width: 0; }
 .admin-setting button, .admin-clip-actions { flex: 0 0 auto; }
 .admin-clip-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-voting-controls { margin: 0 0 28px; }
+.admin-voting-bulk { display: flex; flex-wrap: wrap; gap: 9px; margin: 0 0 10px; }
+.admin-voting-categories { border-top: 1px solid var(--border); }
+.admin-voting-category {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.admin-voting-category span { min-width: 0; overflow-wrap: anywhere; }
+.admin-voting-category button { flex: 0 0 auto; }
 .danger-button { color: #ffc1c1; border-color: rgba(255, 120, 120, .45); }
 .admin-pagination { justify-content: center; margin-top: 18px; }
 .admin-pagination span { color: var(--muted); }

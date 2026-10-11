@@ -33,6 +33,7 @@ const adminLoginError = document.querySelector("#admin-login-error");
 const adminSettingsError = document.querySelector("#admin-settings-error");
 const adminClipsError = document.querySelector("#admin-clips-error");
 const adminClipsList = document.querySelector("#admin-clips");
+const adminVotingCategories = document.querySelector("#admin-voting-categories");
 const pageSize = 20;
 let page = 0;
 let hasMore = true;
@@ -71,7 +72,7 @@ function showTab(tab) {
 
 function applySiteSettings() {
   const uploadsEnabled = siteSettings?.uploadsEnabled === true;
-  const votingEnabled = siteSettings?.votingEnabled === true;
+  const votingEnabled = (siteSettings?.votingCategories?.length ?? 0) > 0;
   clipFormFields.disabled = !uploadsEnabled;
   gallerySubtitle.textContent = votingEnabled
     ? "Obejrzyj wszystkie zgłoszenia i oddaj swój głos na najlepszy klip w każdej z kategorii!"
@@ -141,7 +142,7 @@ function createClipCard(clip) {
     content.append(link);
   }
 
-  if (siteSettings?.votingEnabled) {
+  if (siteSettings?.votingCategories?.includes(clip.category)) {
     const actions = document.createElement("div");
     actions.className = "clip-actions";
     const count = document.createElement("span");
@@ -280,22 +281,38 @@ async function loadAdminSession() {
 
 function updateAdminSettingControls() {
   const uploadsEnabled = siteSettings?.uploadsEnabled === true;
-  const votingEnabled = siteSettings?.votingEnabled === true;
+  const votingCategories = siteSettings?.votingCategories ?? [];
+  const votingEnabled = votingCategories.length > 0;
   document.querySelector("#admin-uploads-status").textContent = uploadsEnabled ? "Włączone" : "Wyłączone";
-  document.querySelector("#admin-voting-status").textContent = votingEnabled
-    ? "Włączone"
-    : uploadsEnabled
-      ? "Najpierw wyłącz przesyłanie klipów, aby włączyć głosowanie."
-      : "Wyłączone";
+  document.querySelector("#admin-voting-status").textContent = uploadsEnabled
+    ? "Aby zmieniać głosowanie, najpierw wyłącz przesyłanie klipów."
+    : `Włączone w ${votingCategories.length} z ${categories.length} kategorii.`;
   const uploadsButton = document.querySelector("#btn-toggle-uploads");
   uploadsButton.textContent = uploadsEnabled ? "Wyłącz przesyłanie" : "Włącz przesyłanie";
   uploadsButton.disabled = updatingSettings;
-  const votingButton = document.querySelector("#btn-toggle-voting");
-  votingButton.textContent = votingEnabled ? "Wyłącz głosowanie" : "Włącz głosowanie";
-  votingButton.disabled = updatingSettings || (uploadsEnabled && !votingEnabled);
+  document.querySelector("#btn-enable-all-voting").disabled = updatingSettings || uploadsEnabled;
+  document.querySelector("#btn-disable-all-voting").disabled = updatingSettings || uploadsEnabled || !votingEnabled;
+  adminVotingCategories.replaceChildren(...categories.map((category) => {
+    const row = document.createElement("div");
+    row.className = "admin-voting-category";
+    const label = document.createElement("span");
+    label.textContent = category;
+    const enabled = votingCategories.includes(category);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn-secondary";
+    button.textContent = enabled ? "Wyłącz" : "Włącz";
+    button.disabled = updatingSettings || uploadsEnabled;
+    button.setAttribute("aria-pressed", String(enabled));
+    button.addEventListener("click", () => {
+      updateAdminSetting("votingCategory", !enabled, category);
+    });
+    row.append(label, button);
+    return row;
+  }));
 }
 
-async function updateAdminSetting(setting, enabled) {
+async function updateAdminSetting(setting, enabled, category) {
   updatingSettings = true;
   updateAdminSettingControls();
   adminSettingsError.classList.add("hidden");
@@ -303,7 +320,7 @@ async function updateAdminSetting(setting, enabled) {
     const result = await readJson(await fetch("/api/admin/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ setting, enabled }),
+      body: JSON.stringify({ setting, enabled, ...(category ? { category } : {}) }),
     }));
     siteSettings = result.settings;
     applySiteSettings();
@@ -415,8 +432,11 @@ document.querySelector("#btn-admin-logout").addEventListener("click", async () =
 document.querySelector("#btn-toggle-uploads").addEventListener("click", () => {
   updateAdminSetting("uploadsEnabled", !siteSettings?.uploadsEnabled);
 });
-document.querySelector("#btn-toggle-voting").addEventListener("click", () => {
-  updateAdminSetting("votingEnabled", !siteSettings?.votingEnabled);
+document.querySelector("#btn-enable-all-voting").addEventListener("click", () => {
+  updateAdminSetting("votingAll", true);
+});
+document.querySelector("#btn-disable-all-voting").addEventListener("click", () => {
+  updateAdminSetting("votingAll", false);
 });
 document.querySelector("#btn-admin-previous").addEventListener("click", () => {
   if (adminPage > 0) {

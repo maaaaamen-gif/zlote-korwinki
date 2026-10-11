@@ -12,7 +12,7 @@ Node.js/Express app hosted on Render. MongoDB Atlas stores submissions and votes
 6. Generate a session-signing secret with `openssl rand -base64 48` and set it as `ADMIN_SESSION_SECRET` in Render. Keep this secret private as well.
 7. Deploy and use the `onrender.com` URL shown for the service. This app's API and static site are served by the same Node.js service.
 
-The administrator signs in from the **Administracja** tab. The signed admin session is stored in a secure, HTTP-only cookie and expires after 12 hours. The admin can manage clip submissions, clear a clip's votes, and toggle submissions and voting. Voting starts disabled and can only be enabled after submissions are turned off; enabling submissions automatically turns voting off. These settings and uploaded clips are stored in MongoDB.
+The administrator signs in from the **Administracja** tab. The signed admin session is stored in a secure, HTTP-only cookie and expires after 12 hours. The admin can manage clip submissions, clear a clip's votes, and toggle submissions and voting per category (or enable/disable all categories at once). Voting starts disabled and can only be enabled after submissions are turned off; enabling submissions automatically turns voting off in every category. These settings and uploaded clips are stored in MongoDB.
 
 The Atlas cluster must be running, and Atlas Network Access must allow the Render service to connect. For a hobby project, an Atlas IP access-list entry of `0.0.0.0/0` can be used if Render's outbound addresses cannot be restricted; use a dedicated database user with a strong password and access limited to this application's database.
 
