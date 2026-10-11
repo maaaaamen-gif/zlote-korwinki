@@ -8,7 +8,6 @@
   },
   "scripts": {
     "start": "node server.js",
-    "build": "node scripts/build-pages.js",
     "test": "node --test"
   },
   "dependencies": {

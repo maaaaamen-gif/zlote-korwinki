@@ -1,7 +1,0 @@
-name = "zlote-korwinki"
-compatibility_date = "2026-08-04"
-compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "./dist"
-
-[vars]
-MONGODB_DB = "zlote_korwinki"
