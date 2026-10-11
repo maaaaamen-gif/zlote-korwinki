@@ -42,7 +42,7 @@ button { cursor: pointer; }
   gap: 20px;
 }
 .nav-brand { font-weight: 800; letter-spacing: 0.04em; }
-.nav-brand::before { content: "ZŁOTE KLIPY"; color: var(--accent); }
+.nav-brand::before { content: "ZŁOTE KORWINKI"; color: var(--accent); }
 .nav-tabs { display: flex; gap: 8px; }
 .nav-tab, .btn-secondary {
   color: #f8f7ff;
