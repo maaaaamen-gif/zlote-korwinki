@@ -12,7 +12,7 @@ This app serves the site and its API from one Node.js service. Clip details and 
 
 The upload limit is 100 MB per file. Supported uploads are MP4, WebM, MOV, JPG, PNG, and WebP. Each visitor can vote once per clip per browser using an HTTP-only cookie; this is a basic anonymous limit, not identity verification.
 
-Submitter email addresses are stored in MongoDB but are not returned by the public gallery API. Uploaded media is held in GridFS, so account storage and bandwidth limits apply.
+The submission form does not ask for or store submitter email addresses. Uploaded media is held in GridFS, so account storage and bandwidth limits apply.
 
 ## Publish
 

@@ -4,15 +4,14 @@ import { CATEGORIES, ValidationError, validateClipInput } from "../src/clip-vali
 
 const validInput = {
   name: "Nyx",
-  email: "nyx@example.com",
   caption: "Dobry klip",
   gallery_category: CATEGORIES[0],
   video_url: "",
 };
 
-test("validates and normalizes link submissions", () => {
-  const input = validateClipInput({ ...validInput, email: "Nyx@Example.com", video_url: "https://example.com/clip" }, false);
-  assert.equal(input.email, "nyx@example.com");
+test("validates link submissions without requiring or storing an email address", () => {
+  const input = validateClipInput({ ...validInput, email: "not-an-email", video_url: "https://example.com/clip" }, false);
+  assert.equal("email" in input, false);
   assert.equal(input.videoUrl, "https://example.com/clip");
 });
 
@@ -29,8 +28,7 @@ test("rejects submissions with both or neither media source", () => {
   );
 });
 
-test("rejects invalid email, category, and URL schemes", () => {
-  assert.throws(() => validateClipInput({ ...validInput, email: "bad" }, true), /adres email/);
+test("rejects invalid category and URL schemes", () => {
   assert.throws(() => validateClipInput({ ...validInput, gallery_category: "Inna" }, true), /kategorię/);
   assert.throws(
     () => validateClipInput({ ...validInput, video_url: "javascript:alert(1)" }, false),
