@@ -279,7 +279,7 @@ async function start() {
   const client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
   try {
     await client.connect();
-    const database = client.db(process.env.MONGODB_DB || "zlote-korwinki");
+    const database = client.db(process.env.MONGODB_DB || "zlote_korwinki");
     clips = database.collection("clips");
     votes = database.collection("clip_votes");
     bucket = new GridFSBucket(database, { bucketName: "clip_media" });

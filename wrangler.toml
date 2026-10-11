@@ -4,4 +4,4 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "./dist"
 
 [vars]
-MONGODB_DB = "zlote-korwinki"
+MONGODB_DB = "zlote_korwinki"
