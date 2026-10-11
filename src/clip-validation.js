@@ -11,6 +11,12 @@ export const CATEGORIES = Object.freeze([
   "Najlepszy voice actor",
   "Najlepszy horror Roblox",
   "Piękny steal",
+  "Najstraszniejszy klip",
+  "Najśmieszniejszy klip",
+  "Najlepszy crashout",
+  "Mucha",
+  "Pentakill",
+  "Aura",
 ]);
 
 export class ValidationError extends Error {}

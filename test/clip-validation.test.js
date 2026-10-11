@@ -8,6 +8,29 @@ const validInput = {
   video_url: "",
 };
 
+test("includes all 18 contest categories", () => {
+  assert.deepEqual(CATEGORIES, [
+    "Niefart roku",
+    "Fart roku",
+    "Moment radości",
+    "Ucięty shot",
+    "Cringe roku",
+    "Najlepsze zagranie roku",
+    "Zwrot akcji",
+    "Rizz roku",
+    "Schiza roku",
+    "Najlepszy voice actor",
+    "Najlepszy horror Roblox",
+    "Piękny steal",
+    "Najstraszniejszy klip",
+    "Najśmieszniejszy klip",
+    "Najlepszy crashout",
+    "Mucha",
+    "Pentakill",
+    "Aura",
+  ]);
+});
+
 test("validates link submissions without storing an author name", () => {
   const input = validateClipInput({ ...validInput, name: "Nyx", video_url: "https://example.com/clip" }, false);
   assert.equal("name" in input, false);

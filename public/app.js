@@ -11,6 +11,12 @@ const categories = [
   "Najlepszy voice actor",
   "Najlepszy horror Roblox",
   "Piękny steal",
+  "Najstraszniejszy klip",
+  "Najśmieszniejszy klip",
+  "Najlepszy crashout",
+  "Mucha",
+  "Pentakill",
+  "Aura",
 ];
 
 const form = document.querySelector("#clip-form");
