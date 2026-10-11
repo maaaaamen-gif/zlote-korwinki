@@ -11,6 +11,12 @@ services:
         sync: false
       - key: MONGODB_DB
         value: zlote_korwinki
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_SESSION_SECRET
+        sync: false
       - key: NODE_ENV
         value: production
       - key: TRUST_PROXY

@@ -24,11 +24,23 @@ const galleryError = document.querySelector("#gallery-error");
 const loadMore = document.querySelector("#btn-load-more");
 const categorySelect = document.querySelector("#gallery_category");
 const filterSelect = document.querySelector("#filter-category");
+const clipFormFields = document.querySelector("#clip-form-fields");
+const submissionStatus = document.querySelector("#submission-status");
+const gallerySubtitle = document.querySelector("#gallery-subtitle");
+const adminLoginForm = document.querySelector("#admin-login-form");
+const adminDashboard = document.querySelector("#admin-dashboard");
+const adminLoginError = document.querySelector("#admin-login-error");
+const adminSettingsError = document.querySelector("#admin-settings-error");
+const adminClipsError = document.querySelector("#admin-clips-error");
+const adminClipsList = document.querySelector("#admin-clips");
 const pageSize = 20;
 let page = 0;
 let hasMore = true;
 let loadingPage = false;
-let galleryNeedsRefresh = false;
+let siteSettings = null;
+let adminPage = 0;
+let adminHasMore = false;
+let updatingSettings = false;
 
 for (const category of categories) {
   const option = document.createElement("option");
@@ -42,14 +54,48 @@ for (const category of categories) {
 
 function showTab(tab) {
   const gallerySelected = tab === "gallery";
-  document.querySelector("#section-submit").classList.toggle("hidden", gallerySelected);
+  const adminSelected = tab === "admin";
+  document.querySelector("#section-submit").classList.toggle("hidden", gallerySelected || adminSelected);
   document.querySelector("#section-gallery").classList.toggle("hidden", !gallerySelected);
-  document.querySelector("#btn-tab-submit").classList.toggle("active", !gallerySelected);
+  document.querySelector("#section-admin").classList.toggle("hidden", !adminSelected);
+  document.querySelector("#btn-tab-submit").classList.toggle("active", !gallerySelected && !adminSelected);
   document.querySelector("#btn-tab-gallery").classList.toggle("active", gallerySelected);
-  if (gallerySelected && (galleryNeedsRefresh || galleryGrid.childElementCount === 0)) {
-    galleryNeedsRefresh = false;
-    loadClips(true);
+  document.querySelector("#btn-tab-admin").classList.toggle("active", adminSelected);
+  if (gallerySelected) {
+    refreshSiteSettings().then(() => loadClips(true));
+  } else if (!adminSelected) {
+    refreshSiteSettings();
   }
+  if (adminSelected) loadAdminSession();
+}
+
+function applySiteSettings() {
+  const uploadsEnabled = siteSettings?.uploadsEnabled === true;
+  const votingEnabled = siteSettings?.votingEnabled === true;
+  clipFormFields.disabled = !uploadsEnabled;
+  gallerySubtitle.textContent = votingEnabled
+    ? "Obejrzyj wszystkie zgłoszenia i oddaj swój głos na najlepszy klip w każdej z kategorii!"
+    : "Obejrzyj wszystkie zgłoszenia z konkursu. Głosowanie jeszcze się nie rozpoczęło.";
+  document.querySelector("#btn-tab-gallery").textContent = votingEnabled ? "Głosowanie i Galeria" : "Galeria";
+  submissionStatus.textContent = siteSettings
+    ? "Przesyłanie klipów jest obecnie wyłączone."
+    : "Nie udało się pobrać ustawień konkursu. Odśwież stronę i spróbuj ponownie.";
+  submissionStatus.classList.toggle("hidden", uploadsEnabled);
+}
+
+async function readJson(response) {
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Wystąpił błąd. Spróbuj ponownie.");
+  return result;
+}
+
+async function refreshSiteSettings() {
+  try {
+    siteSettings = await readJson(await fetch("/api/site-settings"));
+  } catch {
+    siteSettings = null;
+  }
+  applySiteSettings();
 }
 
 function showError(message) {
@@ -84,9 +130,7 @@ function createClipCard(clip) {
   const category = document.createElement("p");
   category.className = "clip-category";
   category.textContent = clip.category;
-  const author = document.createElement("p");
-  author.textContent = `Autor: ${clip.name}`;
-  content.append(title, category, author);
+  content.append(title, category);
 
   if (clip.videoUrl) {
     const link = document.createElement("a");
@@ -97,31 +141,35 @@ function createClipCard(clip) {
     content.append(link);
   }
 
-  const actions = document.createElement("div");
-  actions.className = "clip-actions";
-  const count = document.createElement("span");
-  count.textContent = `Głosy: ${clip.votes}`;
-  const vote = document.createElement("button");
-  vote.type = "button";
-  vote.className = `btn-secondary vote-button${clip.hasVoted ? " voted" : ""}`;
-  vote.textContent = clip.hasVoted ? "Oddano głos" : "Głosuj";
-  vote.disabled = clip.hasVoted;
-  vote.addEventListener("click", async () => {
-    vote.disabled = true;
-    try {
-      const response = await fetch(`/api/clips/${encodeURIComponent(clip.id)}/vote`, { method: "POST" });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Nie udało się oddać głosu.");
-      count.textContent = `Głosy: ${result.votes}`;
-      vote.textContent = "Oddano głos";
-      vote.classList.add("voted");
-    } catch (error) {
-      vote.disabled = false;
-      window.alert(error.message);
-    }
-  });
-  actions.append(count, vote);
-  content.append(actions);
+  if (siteSettings?.votingEnabled) {
+    const actions = document.createElement("div");
+    actions.className = "clip-actions";
+    const count = document.createElement("span");
+    count.textContent = `Głosy: ${clip.votes}`;
+    const vote = document.createElement("button");
+    vote.type = "button";
+    vote.className = `btn-secondary vote-button${clip.hasVoted ? " voted" : ""}`;
+    vote.textContent = clip.hasVoted ? "Oddano głos" : "Głosuj";
+    vote.disabled = clip.hasVoted;
+    vote.addEventListener("click", async () => {
+      vote.disabled = true;
+      try {
+        const result = await readJson(await fetch(`/api/clips/${encodeURIComponent(clip.id)}/vote`, { method: "POST" }));
+        count.textContent = `Głosy: ${result.votes}`;
+        vote.textContent = "Oddano głos";
+        vote.classList.add("voted");
+      } catch (error) {
+        vote.disabled = false;
+        if (error.message === "Głosowanie jest obecnie wyłączone.") {
+          await refreshSiteSettings();
+          loadClips(true);
+        }
+        window.alert(error.message);
+      }
+    });
+    actions.append(count, vote);
+    content.append(actions);
+  }
   card.append(content);
   return card;
 }
@@ -161,6 +209,7 @@ async function loadClips(reset = false) {
 
 document.querySelector("#btn-tab-submit").addEventListener("click", () => showTab("submit"));
 document.querySelector("#btn-tab-gallery").addEventListener("click", () => showTab("gallery"));
+document.querySelector("#btn-tab-admin").addEventListener("click", () => showTab("admin"));
 document.querySelector("#btn-go-gallery").addEventListener("click", () => showTab("gallery"));
 document.querySelector("#btn-submit-another").addEventListener("click", () => {
   form.reset();
@@ -184,15 +233,202 @@ form.addEventListener("submit", async (event) => {
   const submitButton = document.querySelector("#btn-submit-clip");
   submitButton.disabled = true;
   try {
-    const response = await fetch("/api/clips", { method: "POST", body: new FormData(form) });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Nie udało się wysłać zgłoszenia.");
-    galleryNeedsRefresh = true;
+    await readJson(await fetch("/api/clips", { method: "POST", body: new FormData(form) }));
     submitArea.classList.add("hidden");
     successArea.classList.remove("hidden");
   } catch (error) {
     showError(error.message);
+    if (error.message === "Przesyłanie klipów jest obecnie wyłączone.") {
+      await refreshSiteSettings();
+    }
   } finally {
-    submitButton.disabled = false;
+    submitButton.disabled = !siteSettings?.uploadsEnabled;
   }
 });
+
+function showAdminLogin() {
+  adminLoginForm.classList.remove("hidden");
+  adminDashboard.classList.add("hidden");
+}
+
+function showAdminDashboard() {
+  adminLoginForm.classList.add("hidden");
+  adminDashboard.classList.remove("hidden");
+}
+
+async function loadAdminSession() {
+  try {
+    const response = await fetch("/api/admin/session");
+    if (!response.ok) {
+      showAdminLogin();
+      return;
+    }
+    const session = await readJson(response);
+    siteSettings = session.settings;
+    applySiteSettings();
+    updateAdminSettingControls();
+    showAdminDashboard();
+    adminSettingsError.classList.add("hidden");
+    adminClipsError.classList.add("hidden");
+    await loadAdminClips(true);
+  } catch (error) {
+    showAdminLogin();
+    adminLoginError.textContent = error.message;
+    adminLoginError.classList.remove("hidden");
+  }
+}
+
+function updateAdminSettingControls() {
+  const uploadsEnabled = siteSettings?.uploadsEnabled === true;
+  const votingEnabled = siteSettings?.votingEnabled === true;
+  document.querySelector("#admin-uploads-status").textContent = uploadsEnabled ? "Włączone" : "Wyłączone";
+  document.querySelector("#admin-voting-status").textContent = votingEnabled
+    ? "Włączone"
+    : uploadsEnabled
+      ? "Najpierw wyłącz przesyłanie klipów, aby włączyć głosowanie."
+      : "Wyłączone";
+  const uploadsButton = document.querySelector("#btn-toggle-uploads");
+  uploadsButton.textContent = uploadsEnabled ? "Wyłącz przesyłanie" : "Włącz przesyłanie";
+  uploadsButton.disabled = updatingSettings;
+  const votingButton = document.querySelector("#btn-toggle-voting");
+  votingButton.textContent = votingEnabled ? "Wyłącz głosowanie" : "Włącz głosowanie";
+  votingButton.disabled = updatingSettings || (uploadsEnabled && !votingEnabled);
+}
+
+async function updateAdminSetting(setting, enabled) {
+  updatingSettings = true;
+  updateAdminSettingControls();
+  adminSettingsError.classList.add("hidden");
+  try {
+    const result = await readJson(await fetch("/api/admin/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ setting, enabled }),
+    }));
+    siteSettings = result.settings;
+    applySiteSettings();
+    updateAdminSettingControls();
+    if (!document.querySelector("#section-gallery").classList.contains("hidden")) loadClips(true);
+  } catch (error) {
+    adminSettingsError.textContent = error.message;
+    adminSettingsError.classList.remove("hidden");
+  } finally {
+    updatingSettings = false;
+    updateAdminSettingControls();
+  }
+}
+
+function createAdminClipRow(clip) {
+  const row = document.createElement("article");
+  row.className = "admin-clip";
+  const description = document.createElement("div");
+  const title = document.createElement("strong");
+  title.textContent = clip.caption;
+  const category = document.createElement("p");
+  category.textContent = `${clip.category} · Głosy: ${clip.votes}`;
+  description.append(title, category);
+
+  const actions = document.createElement("div");
+  actions.className = "admin-clip-actions";
+  const clearVotes = document.createElement("button");
+  clearVotes.type = "button";
+  clearVotes.className = "btn-secondary";
+  clearVotes.textContent = "Usuń głosy";
+  clearVotes.disabled = clip.votes === 0;
+  clearVotes.addEventListener("click", async () => {
+    if (!window.confirm(`Usunąć wszystkie głosy na klip „${clip.caption}”?`)) return;
+    await manageAdminClip(`/api/admin/clips/${encodeURIComponent(clip.id)}/votes`, "DELETE");
+  });
+
+  const deleteClip = document.createElement("button");
+  deleteClip.type = "button";
+  deleteClip.className = "btn-secondary danger-button";
+  deleteClip.textContent = "Usuń klip";
+  deleteClip.addEventListener("click", async () => {
+    if (!window.confirm(`Usunąć klip „${clip.caption}” wraz z głosami i plikiem?`)) return;
+    await manageAdminClip(`/api/admin/clips/${encodeURIComponent(clip.id)}`, "DELETE");
+  });
+  actions.append(clearVotes, deleteClip);
+  row.append(description, actions);
+  return row;
+}
+
+async function manageAdminClip(url, method) {
+  adminClipsError.classList.add("hidden");
+  try {
+    await readJson(await fetch(url, { method }));
+    await loadAdminClips(true);
+  } catch (error) {
+    adminClipsError.textContent = error.message;
+    adminClipsError.classList.remove("hidden");
+  }
+}
+
+async function loadAdminClips(reset = false) {
+  if (reset) adminPage = 0;
+  adminClipsError.classList.add("hidden");
+  try {
+    const result = await readJson(await fetch(`/api/admin/clips?page=${adminPage}&limit=30`));
+    adminClipsList.replaceChildren(...result.clips.map(createAdminClipRow));
+    adminHasMore = result.hasMore;
+    document.querySelector("#admin-clips-empty").classList.toggle("hidden", result.clips.length !== 0);
+    document.querySelector("#btn-admin-previous").disabled = adminPage === 0;
+    document.querySelector("#btn-admin-next").disabled = !adminHasMore;
+    document.querySelector("#admin-page-label").textContent = `Strona ${adminPage + 1}`;
+  } catch (error) {
+    adminClipsError.textContent = error.message;
+    adminClipsError.classList.remove("hidden");
+  }
+}
+
+adminLoginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  adminLoginError.classList.add("hidden");
+  const data = new FormData(adminLoginForm);
+  try {
+    await readJson(await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: data.get("username"),
+        password: data.get("password"),
+      }),
+    }));
+    adminLoginForm.reset();
+    await loadAdminSession();
+  } catch (error) {
+    adminLoginError.textContent = error.message;
+    adminLoginError.classList.remove("hidden");
+  }
+});
+
+document.querySelector("#btn-admin-logout").addEventListener("click", async () => {
+  try {
+    await readJson(await fetch("/api/admin/logout", { method: "POST" }));
+    showAdminLogin();
+  } catch (error) {
+    adminSettingsError.textContent = error.message;
+    adminSettingsError.classList.remove("hidden");
+  }
+});
+
+document.querySelector("#btn-toggle-uploads").addEventListener("click", () => {
+  updateAdminSetting("uploadsEnabled", !siteSettings?.uploadsEnabled);
+});
+document.querySelector("#btn-toggle-voting").addEventListener("click", () => {
+  updateAdminSetting("votingEnabled", !siteSettings?.votingEnabled);
+});
+document.querySelector("#btn-admin-previous").addEventListener("click", () => {
+  if (adminPage > 0) {
+    adminPage -= 1;
+    loadAdminClips();
+  }
+});
+document.querySelector("#btn-admin-next").addEventListener("click", () => {
+  if (adminHasMore) {
+    adminPage += 1;
+    loadAdminClips();
+  }
+});
+
+refreshSiteSettings();

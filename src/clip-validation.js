@@ -25,7 +25,6 @@ function readText(value, label, maxLength) {
 }
 
 export function validateClipInput(body, hasFile) {
-  const name = readText(body.name, "imię lub pseudonim", 60);
   const caption = readText(body.caption, "tytuł klipu", 120);
   const category = readText(body.gallery_category, "kategoria", 80);
   const videoUrl = typeof body.video_url === "string" ? body.video_url.trim() : "";
@@ -49,5 +48,5 @@ export function validateClipInput(body, hasFile) {
     }
   }
 
-  return { name, caption, category, videoUrl: videoUrl || null };
+  return { caption, category, videoUrl: videoUrl || null };
 }

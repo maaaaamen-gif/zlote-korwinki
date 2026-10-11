@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Konkurs na Najlepszy Klip</title>
-  <link rel="stylesheet" href="/site.css">
-  <script src="/app.js" defer></script>
+  <link rel="stylesheet" href="/site.css?v=admin-controls-1">
+  <script src="/app.js?v=admin-controls-1" defer></script>
 </head>
 <body>
 
@@ -17,6 +17,7 @@
         <div class="nav-tabs">
           <button id="btn-tab-submit" class="nav-tab active">Prześlij Klip</button>
           <button id="btn-tab-gallery" class="nav-tab">Głosowanie i Galeria</button>
+          <button id="btn-tab-admin" class="nav-tab">Administracja</button>
         </div>
       </div>
     </nav>
@@ -34,48 +35,46 @@
 
         <div class="form-container glass-panel">
           <div id="submit-form-area">
+            <p id="submission-status" class="status-message hidden" role="status"></p>
             <form id="clip-form" novalidate>
-              <div class="form-group">
-                <label for="name">Twoje Imię / Pseudonim</label>
-                <input type="text" id="name" name="name" placeholder="GamerTag lub prawdziwe imię" required>
-              </div>
-
-              <div class="form-group">
-                <label for="caption">Tytuł Klipu</label>
-                <input type="text" id="caption" name="caption" placeholder="Nadaj swojemu klipowi chwytliwy tytuł" required>
-              </div>
-
-              <div class="form-group">
-                <label for="gallery_category">Kategoria</label>
-                <div class="select-wrapper">
-                  <select id="gallery_category" name="gallery_category" required>
-                    <option value="" disabled selected>Wybierz kategorię...</option>
-                    <!-- populated by JS -->
-                  </select>
-                </div>
-              </div>
-
-              <div class="media-upload-section">
-                <p class="media-instruction">Wgraj plik lub podaj link do klipu — pliki są przechowywane w MongoDB.</p>
-                
+              <fieldset id="clip-form-fields" disabled>
                 <div class="form-group">
-                  <label for="media">Wgraj plik wideo/zdjęcie</label>
-                  <input type="file" id="media" name="media" accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp" class="file-input">
+                  <label for="caption">Tytuł Klipu</label>
+                  <input type="text" id="caption" name="caption" placeholder="Nadaj swojemu klipowi chwytliwy tytuł" required>
                 </div>
-                
-                <div class="divider"><span>LUB</span></div>
-                
+
                 <div class="form-group">
-                  <label for="video_url">Link do Klipu (YouTube, Twitch, Medal, itp.)</label>
-                  <input type="url" id="video_url" name="video_url" placeholder="https://...">
+                  <label for="gallery_category">Kategoria</label>
+                  <div class="select-wrapper">
+                    <select id="gallery_category" name="gallery_category" required>
+                      <option value="" disabled selected>Wybierz kategorię...</option>
+                      <!-- populated by JS -->
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              <div id="form-error" class="error-message hidden"></div>
+                <div class="media-upload-section">
+                  <p class="media-instruction">Wgraj plik lub podaj link do klipu — pliki są przechowywane w MongoDB.</p>
 
-              <button type="submit" id="btn-submit-clip" class="btn-primary">
-                <span>Prześlij Klip</span>
-              </button>
+                  <div class="form-group">
+                    <label for="media">Wgraj plik wideo/zdjęcie</label>
+                    <input type="file" id="media" name="media" accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp" class="file-input">
+                  </div>
+
+                  <div class="divider"><span>LUB</span></div>
+
+                  <div class="form-group">
+                    <label for="video_url">Link do Klipu (YouTube, Twitch, Medal, itp.)</label>
+                    <input type="url" id="video_url" name="video_url" placeholder="https://...">
+                  </div>
+                </div>
+
+                <div id="form-error" class="error-message hidden"></div>
+
+                <button type="submit" id="btn-submit-clip" class="btn-primary">
+                  <span>Prześlij Klip</span>
+                </button>
+              </fieldset>
             </form>
           </div>
 
@@ -98,7 +97,7 @@
       <section id="section-gallery" class="tab-section hidden">
         <div class="hero-header sm">
           <h2 class="hero-title">Galeria <span class="highlight">Konkursowa</span></h2>
-          <p class="hero-subtitle">Obejrzyj wszystkie zgłoszenia i oddaj swój głos na najlepszy klip w każdej z kategorii!</p>
+          <p id="gallery-subtitle" class="hero-subtitle">Obejrzyj wszystkie zgłoszenia z konkursu.</p>
         </div>
 
         <div class="gallery-controls">
@@ -131,6 +130,60 @@
 
         <div class="load-more-container">
           <button id="btn-load-more" class="btn-secondary hidden">Załaduj Więcej</button>
+        </div>
+      </section>
+
+      <section id="section-admin" class="tab-section hidden">
+        <div class="hero-header sm">
+          <h2 class="hero-title">Panel <span class="highlight">administratora</span></h2>
+          <p class="hero-subtitle">Zarządzaj zgłoszeniami, głosami i etapami konkursu.</p>
+        </div>
+
+        <div class="form-container glass-panel">
+          <form id="admin-login-form">
+            <div class="form-group">
+              <label for="admin-username">Login administratora</label>
+              <input id="admin-username" name="username" autocomplete="username" required>
+            </div>
+            <div class="form-group">
+              <label for="admin-password">Hasło</label>
+              <input id="admin-password" name="password" type="password" autocomplete="current-password" required>
+            </div>
+            <p id="admin-login-error" class="error-message hidden" role="alert"></p>
+            <button type="submit" class="btn-primary">Zaloguj</button>
+          </form>
+
+          <div id="admin-dashboard" class="hidden">
+            <div class="admin-toolbar">
+              <h3>Ustawienia konkursu</h3>
+              <button id="btn-admin-logout" type="button" class="btn-secondary">Wyloguj</button>
+            </div>
+            <p id="admin-settings-error" class="error-message hidden" role="alert"></p>
+            <div class="admin-setting">
+              <div>
+                <strong>Przesyłanie klipów</strong>
+                <p id="admin-uploads-status"></p>
+              </div>
+              <button id="btn-toggle-uploads" type="button" class="btn-secondary"></button>
+            </div>
+            <div class="admin-setting">
+              <div>
+                <strong>Głosowanie</strong>
+                <p id="admin-voting-status"></p>
+              </div>
+              <button id="btn-toggle-voting" type="button" class="btn-secondary"></button>
+            </div>
+
+            <h3>Zgłoszone klipy</h3>
+            <div id="admin-clips" class="admin-clips"></div>
+            <p id="admin-clips-empty" class="status-message hidden">Nie ma jeszcze żadnych klipów.</p>
+            <p id="admin-clips-error" class="error-message hidden" role="alert"></p>
+            <div class="admin-pagination">
+              <button id="btn-admin-previous" type="button" class="btn-secondary">Poprzednie</button>
+              <span id="admin-page-label"></span>
+              <button id="btn-admin-next" type="button" class="btn-secondary">Następne</button>
+            </div>
+          </div>
         </div>
       </section>
 

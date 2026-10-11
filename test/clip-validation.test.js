@@ -3,15 +3,14 @@ import assert from "node:assert/strict";
 import { CATEGORIES, ValidationError, validateClipInput } from "../src/clip-validation.js";
 
 const validInput = {
-  name: "Nyx",
   caption: "Dobry klip",
   gallery_category: CATEGORIES[0],
   video_url: "",
 };
 
-test("validates link submissions without requiring or storing an email address", () => {
-  const input = validateClipInput({ ...validInput, email: "not-an-email", video_url: "https://example.com/clip" }, false);
-  assert.equal("email" in input, false);
+test("validates link submissions without storing an author name", () => {
+  const input = validateClipInput({ ...validInput, name: "Nyx", video_url: "https://example.com/clip" }, false);
+  assert.equal("name" in input, false);
   assert.equal(input.videoUrl, "https://example.com/clip");
 });
 
