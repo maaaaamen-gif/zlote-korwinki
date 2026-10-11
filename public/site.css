@@ -140,6 +140,18 @@ button:disabled { cursor: wait; opacity: 0.65; }
 .admin-clip-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-voting-controls { margin: 0 0 28px; }
 .admin-voting-bulk { display: flex; flex-wrap: wrap; gap: 9px; margin: 0 0 10px; }
+.admin-voting-category-list {
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .025);
+}
+.admin-voting-category-list summary {
+  padding: 12px 0;
+  cursor: pointer;
+  color: var(--muted);
+}
+.admin-voting-category-list[open] summary { color: #f8f7ff; }
 .admin-voting-categories { border-top: 1px solid var(--border); }
 .admin-voting-category {
   display: flex;
