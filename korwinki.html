@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konkurs na Najlepszy Klip</title>
+  <link rel="stylesheet" href="/site.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  
+  <div class="site-wrapper">
+    <!-- Navbar / Tab Switcher -->
+    <nav class="navbar">
+      <div class="nav-content">
+        <div class="nav-brand" id="brand-name"><!-- populated by JS --></div>
+        <div class="nav-tabs">
+          <button id="btn-tab-submit" class="nav-tab active">Prześlij Klip</button>
+          <button id="btn-tab-gallery" class="nav-tab">Głosowanie i Galeria</button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      
+      <!-- SUBMIT SECTION -->
+      <section id="section-submit" class="tab-section active">
+        <div class="hero-header">
+          <span class="badge">Pokaż na co Cię stać</span>
+          <h1 class="hero-title">Prześlij Swoje Najlepsze <span class="highlight">Klipy z Gier</span></h1>
+          <p class="hero-subtitle">Prześlij wideo lub wrzuć link, wybierz kategorię i przygotuj się na wielki konkurs klipów. Niech wygra najlepszy.</p>
+        </div>
+
+        <div class="form-container glass-panel">
+          <div id="submit-form-area">
+            <form id="clip-form" novalidate>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="name">Twoje Imię / Pseudonim</label>
+                  <input type="text" id="name" name="name" placeholder="GamerTag lub prawdziwe imię" required>
+                </div>
+                <div class="form-group">
+                  <label for="email">Adres Email</label>
+                  <input type="email" id="email" name="email" placeholder="ty@przyklad.pl" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="caption">Tytuł Klipu</label>
+                <input type="text" id="caption" name="caption" placeholder="Nadaj swojemu klipowi chwytliwy tytuł" required>
+              </div>
+
+              <div class="form-group">
+                <label for="gallery_category">Kategoria</label>
+                <div class="select-wrapper">
+                  <select id="gallery_category" name="gallery_category" required>
+                    <option value="" disabled selected>Wybierz kategorię...</option>
+                    <!-- populated by JS -->
+                  </select>
+                </div>
+              </div>
+
+              <div class="media-upload-section">
+                <p class="media-instruction">Dostarcz swój klip używając JEDNEJ z poniższych metod:</p>
+                
+                <div class="form-group">
+                  <label for="media">Wgraj plik wideo/zdjęcie</label>
+                  <input type="file" id="media" name="media" accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp" class="file-input">
+                </div>
+                
+                <div class="divider"><span>LUB</span></div>
+                
+                <div class="form-group">
+                  <label for="video_url">Link do Klipu (YouTube, Twitch, Medal, itp.)</label>
+                  <input type="url" id="video_url" name="video_url" placeholder="https://...">
+                </div>
+              </div>
+
+              <div id="form-error" class="error-message hidden"></div>
+
+              <button type="submit" id="btn-submit-clip" class="btn-primary">
+                <span>Prześlij Klip</span>
+              </button>
+            </form>
+          </div>
+
+          <div id="submit-success-area" class="success-message hidden">
+            <div class="success-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <h2>Zgłoszenie Odebrane!</h2>
+            <p>Twój klip został pomyślnie zgłoszony do konkursu.</p>
+            <p id="share-prompt" class="hidden">Podziel się ze znajomymi, aby zbudować hype przed rozpoczęciem głosowania!</p>
+            <div class="action-buttons">
+              <button id="btn-submit-another" class="btn-primary">Prześlij Kolejny Klip</button>
+              <button id="btn-go-gallery" class="btn-secondary">Przejdź do Galerii</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GALLERY SECTION -->
+      <section id="section-gallery" class="tab-section hidden">
+        <div class="hero-header sm">
+          <h2 class="hero-title">Galeria <span class="highlight">Konkursowa</span></h2>
+          <p class="hero-subtitle">Obejrzyj wszystkie zgłoszenia i oddaj swój głos na najlepszy klip w każdej z kategorii!</p>
+        </div>
+
+        <div class="gallery-controls">
+          <div class="filter-group">
+            <label for="filter-category">Filtruj wg kategorii:</label>
+            <div class="select-wrapper">
+              <select id="filter-category">
+                <option value="">Wszystkie Kategorie</option>
+                <!-- populated by JS -->
+              </select>
+            </div>
+          </div>
+        </div>
+        <p id="gallery-error" class="error-message hidden" role="alert"></p>
+
+        <div id="gallery-grid" class="gallery-grid">
+          <!-- Populated by JS -->
+        </div>
+
+        <div id="gallery-loading" class="gallery-loading hidden">
+          <div class="spinner"></div>
+          <p>Ładowanie klipów...</p>
+        </div>
+
+        <div id="gallery-empty" class="gallery-empty hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
+          <h3>Nie znaleziono klipów</h3>
+          <p>Bądź pierwszy, który prześle klip w tej kategorii!</p>
+        </div>
+
+        <div class="load-more-container">
+          <button id="btn-load-more" class="btn-secondary hidden">Załaduj Więcej</button>
+        </div>
+      </section>
+
+      <p class="site-footer">Konkurs na Najlepszy Klip</p>
+    </main>
+  </div>
+</body>
+</html>

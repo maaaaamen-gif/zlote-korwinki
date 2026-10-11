@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: zlote-korwinki
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/categories
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: zlote_korwinki
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
