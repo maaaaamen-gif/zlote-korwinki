@@ -116,8 +116,8 @@ async function removeTempFile(filePath) {
   }
 }
 
-app.get("/", (_request, response) => response.sendFile(path.join(__dirname, "korwinki.html")));
-app.get("/korwinki.html", (_request, response) => response.sendFile(path.join(__dirname, "korwinki.html")));
+app.get("/", (_request, response) => response.sendFile(path.join(__dirname, "index.html")));
+app.get("/korwinki.html", (_request, response) => response.sendFile(path.join(__dirname, "index.html")));
 
 app.get("/api/categories", (_request, response) => response.json({ categories: CATEGORIES }));
 
