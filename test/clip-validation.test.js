@@ -8,26 +8,30 @@ const validInput = {
   video_url: "",
 };
 
-test("includes all 18 contest categories", () => {
+test("includes all 22 contest categories", () => {
   assert.deepEqual(CATEGORIES, [
     "Niefart roku",
     "Fart roku",
     "Moment radości",
     "Ucięty shot",
     "Cringe roku",
-    "Najlepsze zagranie roku",
+    "Play roku",
     "Zwrot akcji",
     "Rizz roku",
     "Schiza roku",
-    "Najlepszy voice actor",
+    "Głos roku",
     "Najlepszy horror Roblox",
-    "Piękny steal",
-    "Najstraszniejszy klip",
+    "Steal roku",
+    "Jumpscare roku",
     "Najśmieszniejszy klip",
     "Najlepszy crashout",
     "Mucha",
     "Pentakill",
     "Aura",
+    "Moment dla rodziny",
+    "Legacy",
+    "Antyartysta roku",
+    "Artysta roku",
   ]);
 });
 
